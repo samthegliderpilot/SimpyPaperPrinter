@@ -1,4 +1,4 @@
-# Simpy Paper Printer
+# Sympy Paper Printer
 
 Ever since I did my masters degree, I've been working on and maturing code to make it easy to create pdf's of homework and my own writing.  My HomeworkHelper has matured into several routines that automates the process of print equations out in a pretty way and making PDF's (or other formats) with sources.  
 
@@ -14,4 +14,4 @@ conda install sympy numpy pandas scipy matplotlib jupyter pytest p2j pandoc
 
 Note that converting Jupyter notebooks may requires LaTeX of some sort to be installed (on Windows, I'm using MiKTeX).
 
-Also note that I used ealier iterations of this code in homework.  If you are working in an environment where students old homework might be used in an automated plagiarizing-check environment, I recommend checking with your environments policy on using code like this, as well as citing the use of this library to avoid potential violations.
+Also note that I used earlier iterations of this code in homework.  If you are working in an environment where students old homework might be used in an automated plagiarizing-check environment, I recommend checking with your environments policy on using code like this, as well as citing the use of this library to avoid potential violations.

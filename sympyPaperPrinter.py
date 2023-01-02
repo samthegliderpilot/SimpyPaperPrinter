@@ -164,7 +164,7 @@ class ReportGeneratorFromPythonFileWithCells :
 
         
         with CleanDirectoryScope(directory, [basename(outputFilePath)], keepDirectoryClean) :
-            if not ScopeIfFileDoesNotExist.isFileControledByScope(ipynbFile) :
+            if not ScopeIfFileDoesNotExist.isFileControlledByScope(ipynbFile) :
                 ReportGeneratorFromPythonFileWithCells.ConvertPythonToJupyter(pythonFilePath, directory)
                 jupyterCommand = "jupyter nbconvert --execute --to markdown --no-input " + ipynbFile
                 ReportGeneratorFromPythonFileWithCells.runCommandPrintingOutput(jupyterCommand)
@@ -216,13 +216,13 @@ class CleanDirectoryScope :
         self.keepDirectoryClean = keepDirectoryClean
 
     def __enter__(self) :
-        self.filesInDirectory, self.directories = self.getFilesAndDirectoreisInDirectory()
+        self.filesInDirectory, self.directories = self.getFilesAndDirectoriesInDirectory()
         return self
 
     def __exit__(self, exc_type, exc_value, tb) :        
         if not self.keepDirectoryClean :
             return
-        filesAtEnd, directoriesAtEnd = self.getFilesAndDirectoreisInDirectory()
+        filesAtEnd, directoriesAtEnd = self.getFilesAndDirectoriesInDirectory()
         for file in filesAtEnd :
             if not file in self.filesInDirectory and not file in self.localNewFilesToKeep :
                 if isfile(file) :
@@ -232,7 +232,7 @@ class CleanDirectoryScope :
             if not dir in self.directories and len(listdir(dir)) == 0: # since we already removed files, only delete dir if empty
                 rmdir(dir)
 
-    def getFilesAndDirectoreisInDirectory(self) -> List[List[str]] :
+    def getFilesAndDirectoriesInDirectory(self) -> List[List[str]] :
         files = []
         directories = []
         for (dirpath, dirnames, filenames) in walk(self.directory) :
@@ -245,7 +245,7 @@ class CleanDirectoryScope :
 import uuid
 class ScopeIfFileDoesNotExist :
     """
-    Creates a scope based on the existance of a file.  What happened is when I want a 
+    Creates a scope based on the existence of a file.  What happened is when I want a 
     script to make a PDF of itself, the script might need to get rerun, which means 
     the 'create pdf' part of the code runs again.  
     """
@@ -272,7 +272,7 @@ class ScopeIfFileDoesNotExist :
             remove(self.fileName)
             
     @staticmethod
-    def isFileControledByScope(filepath) :
+    def isFileControlledByScope(filepath) :
         return filepath in ScopeIfFileDoesNotExist.scopedFiles
 
 
