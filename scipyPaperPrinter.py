@@ -133,14 +133,13 @@ def showEquation(lhsOrEquation, rhs=None, cleanEqu=defaultCleanEquations) :
         else :
             display(sy.Eq(realLhs, realRhs))
 
-
 import subprocess
 from os import listdir, unlink, remove, walk, rmdir
-from os.path import isfile, join, basename, dirname, splitext
+from os.path import isfile, join, basename, dirname, splitext, realpath
 
 class ReportGeneratorFromPythonFileWithCells :      
     @staticmethod
-    def WriteIpynbToDesiredFormatWithPandoc(pythonFilePath, outputFilePath = None, extension = "pdf", sources = None, csl=None) :
+    def WriteIpynbToDesiredFormatWithPandoc(pythonFilePath, outputFilePath = None, extension = "pdf", sources = None, csl=None, keepDirectoryClean = True) :
         if outputFilePath != None :
             extension = splitext(pythonFilePath)[1]
         else :
@@ -163,14 +162,17 @@ class ReportGeneratorFromPythonFileWithCells :
                         csl = file
                         break
 
-        with CleanDirectoryScope(directory, [outputFilePath]) :
+        
+        with CleanDirectoryScope(directory, [basename(outputFilePath)], keepDirectoryClean) :
             if not ScopeIfFileDoesNotExist.isFileControledByScope(ipynbFile) :
                 ReportGeneratorFromPythonFileWithCells.ConvertPythonToJupyter(pythonFilePath, directory)
                 jupyterCommand = "jupyter nbconvert --execute --to markdown --no-input " + ipynbFile
-                subprocess.run(jupyterCommand)
+                ReportGeneratorFromPythonFileWithCells.runCommandPrintingOutput(jupyterCommand)
                 ReportGeneratorFromPythonFileWithCells.RemoveSinglePercentLinesFromFile(mdFileName)
-                pandocCommand = "pandoc " + mdFileName + " -s -N -o " + outputFilePath +" --citeproc --bibliography=" + sources + " --csl=" + csl + " "
-                subprocess.run(pandocCommand, cwd = directory)
+                pandocCommand = "pandoc " + mdFileName + " -s -N -o " + outputFilePath +" --citeproc --bibliography=" + join(directory, sources) + " --csl=" + join(directory, csl)
+                ReportGeneratorFromPythonFileWithCells.runCommandPrintingOutput(pandocCommand, directory)
+                if not isfile(outputFilePath) :
+                    raise Exception("File was not created sucessfully")
 
     @staticmethod
     def RemoveSinglePercentLinesFromFile(filePath) :
@@ -189,8 +191,16 @@ class ReportGeneratorFromPythonFileWithCells :
         # in my workflow (turning comment lines into markdown is the big one)
         if workingDirectory == None :
             workingDirectory = dirname(pythonFileToConvert)
-        subprocess.run('p2j ' + pythonFileToConvert + ' -o', cwd = workingDirectory)
+        ReportGeneratorFromPythonFileWithCells.runCommandPrintingOutput('p2j ' + pythonFileToConvert + ' -o', workingDirectory)
 
+    @staticmethod
+    def runCommandPrintingOutput(command, workingDirectory = None) :
+        if workingDirectory == None :
+            workingDirectory = dirname(dirname(realpath(__file__)))
+        result = subprocess.run(command, capture_output=True, text=True, cwd=workingDirectory)
+        if(len(result.stderr.strip()) > 0):
+            print(result.stderr)
+            print(result.stdout)            
 
 class CleanDirectoryScope :
     """
@@ -199,16 +209,19 @@ class CleanDirectoryScope :
     where a bunch of extra files might clutter up an otherwise well manicured directory, 
     this is a easy way to keep that directory clean.
     """
-    def __init__(self, directory : str, localNewFilesToKeep : List[str] = []) :
+    def __init__(self, directory : str, localNewFilesToKeep : List[str] = [], keepDirectoryClean = True) :
         for file in localNewFilesToKeep :
             self.localNewFilesToKeep = join(directory, file)
         self.directory = directory
+        self.keepDirectoryClean = keepDirectoryClean
 
     def __enter__(self) :
         self.filesInDirectory, self.directories = self.getFilesAndDirectoreisInDirectory()
         return self
 
     def __exit__(self, exc_type, exc_value, tb) :        
+        if not self.keepDirectoryClean :
+            return
         filesAtEnd, directoriesAtEnd = self.getFilesAndDirectoreisInDirectory()
         for file in filesAtEnd :
             if not file in self.filesInDirectory and not file in self.localNewFilesToKeep :
