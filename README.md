@@ -6,9 +6,11 @@ All in all, there isn't much to this library.  There is a routine that prints ou
 
 To make a basic environment to use this library (including the demo I've included):
 
-'conda create --name SciPyPaperPrinterEnv python=3.9
+```
+conda create --name SciPyPaperPrinterEnv python=3.9
 conda activate SciPyPaperPrinterEnv
-conda install sympy numpy pandas scipy matplotlib jupyter pytest p2j pandoc '
+conda install sympy numpy pandas scipy matplotlib jupyter pytest p2j pandoc 
+```
 
 Note that converting Jupyter notebooks may requires LaTeX of some sort to be installed (on Windows, I'm using MiKTeX).
 
