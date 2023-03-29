@@ -1,6 +1,6 @@
 # This is a set of helper function to display pretty printed equations and markdown in a Jupyter (or Jupyter-like window like in VS Code).
 # This is just for outputting purposes and I don't plan on adding tests or thorough documentation to this (for now).
-from IPython.display import  Latex, display, Markdown
+from IPython.display import  display, Markdown
 import sympy as sy
 from sympy.printing.latex import LatexPrinter
 from sympy.core import evaluate
@@ -41,50 +41,76 @@ def printMarkdown(markdown : str) -> None :
             display(Markdown(markdown))
         else :
             print(markdown)
-
-def clean(equ) :
+ 
+def cleanOutUnwantedArguments(exp : sy.Expr, argsToClean : List[sy.Symbol] = None) -> sy.Expr:
     """
-    Cleans the passed in sympy expression.  This will remove the (t) that is common in many expressions I've worked with.
+    For sympy Functions you have made yourself from the Function type, 
+    create an expression that doesn't have extra arguments.  For example:
+
+    myExp = sy.Function('g')(x,y,t)*sy.cos(x)
+    cleanedExpression = cleanOutUnwantedArguments(myExp, [x,t])
+    
+    ... will return:
+    sy.Function('g')(y)*sy.cos(x)
+
+    This is mainly used for pretty printing of expressions.  
+    An empty or null argsToClean will remove all arguments
+
+    Args:
+        exp (sy.Expr): The expression to clean
+        argsToClean (List[sy.Symbol]): The symbol arguments to clean from exp.  
+        A null or empty list will clean all arguments (free_symbols)
+
+    Returns:
+        sy.Expr: An expression with the desired arguments cleaned 
     """
-    if(equ is sy.Matrix) :
-        for row in equ.sizeof(0) :
-            for col  in equ.sizeof(1) :
-                clean(equ[row, col])
-    else:            
-        for val in equ.atoms(sy.Function):
-            
-            dt=sy.Derivative(val, t)
-            ddt=sy.Derivative(dt,t)
 
-            # skip built in functions (add to list above)            
-            clsStr = str(type(val))
-            if(clsStr in syFunctions):
-                continue
-            
-            if(hasattr(val, "name")) :
-                newStr = val.name
-                if t0Str in val.args :
-                    newStr = newStr + "{_0}"
-                elif tfStr in val.args :
-                    newStr = newStr + "{_f}"
-                elif t in val.args :
-                    newStr = newStr# + "(t)"
-            else :
-                newStr = str(val)
-            newDtStr = r'\dot{' +newStr +"}"
-            newDDtStr = r'\ddot{' + newStr +"}"
+    if argsToClean == None:
+        argsToClean = []
+    for arg in exp.args :
+        if not hasattr(arg, "name") :
+            continue
+        
+        copyOfSymbols = []
+        for freeSymbol in exp.free_symbols :
+            if freeSymbol not in argsToClean or len(argsToClean)==0 : 
+                copyOfSymbols.append(freeSymbol)
 
-            # newDtStr = newDtStr.replace('}_{', '_')
-            # newDtStr = newDtStr.replace('}_0', '_0}')
-            # newDtStr = newDtStr.replace('}_f', '_f}')
-            # newDDtStr = newDDtStr.replace('}_{', '_')
-            # newDDtStr = newDDtStr.replace('}_0', '_0}')    
-            # newDDtStr = newDDtStr.replace('}_f', '_f}')    
+        if len(copyOfSymbols) == 0 :
+            rewrittenArg = sy.Symbol(arg.name)
+        else:
+            rewrittenArg = sy.Function(arg.name)(*copyOfSymbols)
+        exp = exp.subs(arg, rewrittenArg)    
+    return exp
 
-            equ=equ.subs(ddt, sy.Symbol(newDDtStr))
-            equ=equ.subs(dt, sy.Symbol(newDtStr))
-            equ=equ.subs(val, sy.Symbol(newStr))
-        return equ
+def convertTimeDerivativeToDotSymbol(exp : sy.Expr, t : sy.Expr =None) -> sy.Expr:  
+    """Converts the passed in expression into one with time derivatives 
+    up to second order, are replaced with symbols using dot notation
+
+    Args:
+        exp (sy.Expr): Some sympy expression
+        t (sy,Expr, optional): The time symbol, defaults to None with will use sy.Symbol('t'). Defaults to None.
+
+    Returns:
+        sy.Expr: An expression where the time derivatives are replaced with symbols using dot notation for time derivatives.
+    """
+    if t == None :
+        t = sy.Symbol('t')
+    for arg in exp.args :
+        if not t in arg.args  :
+            continue
+        sym = sy.Symbol(arg.name)
+        derivative1 = sy.Derivative(arg, t)     
+        if derivative1.is_zero :
+            continue   
+        derivative2 = sy.Derivative(derivative1, t)
+        dot1 = sy.Symbol(r'\dot{' + arg.name + "}")
+        dot2 = sy.Symbol(r'\ddot{' + arg.name + "}")
+
+        exp = exp.subs(derivative2, dot2)
+        exp = exp.subs(derivative1, dot1)
+        exp = exp.subs(arg, sym)
+    return exp
 
 def showEquation(lhsOrEquation, rhs=None, cleanEqu=defaultCleanEquations) :    
     """
@@ -123,12 +149,15 @@ def showEquation(lhsOrEquation, rhs=None, cleanEqu=defaultCleanEquations) :
             realRhs = sy.symbols(rhs)
        
     if(cleanEqu and shouldIClean(realRhs)) : 
-        realRhs = clean(realRhs)
+        realRhs = convertTimeDerivativeToDotSymbol(realRhs)
+        realRhs = cleanOutUnwantedArguments(realRhs)        
     if(cleanEqu and shouldIClean(realLhs)) : 
-        realLhs = clean(realLhs)
+        realLhs = convertTimeDerivativeToDotSymbol(realLhs)
+        realLhs = cleanOutUnwantedArguments(realLhs)
+        
 
     if(not silent) :
-        if(isinstance(realLhs, sy.Eq) and realRhs == None) :
+        if(isinstance(realLhs, sy.Eq) or realRhs == None) :
             display(realLhs) 
         else :
             display(sy.Eq(realLhs, realRhs))
@@ -275,5 +304,3 @@ class ScopeIfFileDoesNotExist :
     def isFileControlledByScope(filepath) :
         return filepath in ScopeIfFileDoesNotExist.scopedFiles
 
-
-    
