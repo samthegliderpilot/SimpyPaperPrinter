@@ -2,8 +2,7 @@
 # This is just for outputting purposes and I don't plan on adding tests or thorough documentation to this (for now).
 from IPython.display import  display, Markdown
 import sympy as sy
-from sympy.printing.latex import LatexPrinter
-from sympy.core import evaluate
+from sympy.core.function import AppliedUndef
 import sys
 from typing import List
 defaultCleanEquations = True
@@ -67,20 +66,23 @@ def cleanOutUnwantedArguments(exp : sy.Expr, argsToClean : List[sy.Symbol] = Non
 
     if argsToClean == None:
         argsToClean = []
-    for arg in exp.args :
-        if not hasattr(arg, "name") :
-            continue
-        
-        copyOfSymbols = []
-        for freeSymbol in exp.free_symbols :
-            if freeSymbol not in argsToClean or len(argsToClean)==0 : 
-                copyOfSymbols.append(freeSymbol)
-
-        if len(copyOfSymbols) == 0 :
+    for arg in exp.atoms(AppliedUndef) :
+       
+        symbolsToLeaveInFinalTerm = []
+        for freeSymbol in arg.free_symbols :
+            if len(argsToClean) == 0 :
+                continue
+            if freeSymbol not in argsToClean: 
+                symbolsToLeaveInFinalTerm.append(freeSymbol)
+                
+        if len(symbolsToLeaveInFinalTerm) == 0 :
             rewrittenArg = sy.Symbol(arg.name)
         else:
-            rewrittenArg = sy.Function(arg.name)(*copyOfSymbols)
-        exp = exp.subs(arg, rewrittenArg)    
+            rewrittenArg = sy.Function(arg.name)(*symbolsToLeaveInFinalTerm)
+        
+        maybeExp = exp.subs(arg, rewrittenArg)    
+        if maybeExp.simplify() != 0 : # if we (for example) replace a derivative(g(t), t) with just symbol g, that derivative becomes 0, not what we want
+            exp = maybeExp 
     return exp
 
 def convertTimeDerivativeToDotSymbol(exp : sy.Expr, t : sy.Expr =None) -> sy.Expr:  

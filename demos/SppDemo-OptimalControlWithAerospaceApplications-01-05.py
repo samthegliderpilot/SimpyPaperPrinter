@@ -7,6 +7,14 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0])) # need to import 1 directories up (so spp is a subfolder)
 import sympyPaperPrinter as spp
 g = 9.80665 #m/sec
+t =sy.Symbol('t')
+mu = sy.Function(r'\mu', positive=True, real=True)
+dv1 = sy.Symbol(r'\Delta{V_{1}}', positive=True, real=True)
+dv2 = sy.Symbol(r'\Delta{V_{2}}', positive=True, real=True)
+r0 = sy.Symbol(r'r_0', positive=True, real=True)
+rf = sy.Symbol(r'r_f', positive=True, real=True)
+v0 = sy.Symbol(r'f_0', positive=True, real=True)
+vf = sy.Symbol(r'v_f', positive=True, real=True)
 
 spp.printMarkdown(r'# Sympy Paper Printer Demo {-}')
 spp.printMarkdown(r'## Solution to Chapter 01 Problem 05 of Optimal Control with Aerospace Applications @LonguskiGuzmanAndPrussing {-}')
@@ -19,32 +27,32 @@ spp.printMarkdown(r'We could spend more time talking about Hohmann Transfers, bu
 mu = sy.Symbol(r'\mu', positive=True, real=True)
 dv1 = sy.Symbol(r'\Delta{V_{1}}', positive=True, real=True)
 dv2 = sy.Symbol(r'\Delta{V_{2}}', positive=True, real=True)
-ro = sy.Symbol(r'r_o', positive=True, real=True)
+r0 = sy.Symbol(r'r_o', positive=True, real=True)
 rf = sy.Symbol(r'r_f', positive=True, real=True)
-vo = sy.Symbol(r'f_o', positive=True, real=True)
+v0 = sy.Symbol(r'f_o', positive=True, real=True)
 vf = sy.Symbol(r'v_f', positive=True, real=True)
 dvTol = sy.Symbol(r'\Delta{V_{tol}}', positive=True, real=True)
 
 with (evaluate(False)) : # setting evaluate to false here helps prevent some of the simplification and rearrangement of terms that sympy will do by default
     # equation 1.36 and 1.41
-    dv1 = sy.sqrt(mu/ro)*(sy.sqrt(2*rf/(rf+ro))-1)
-    dv2 = sy.sqrt(mu/rf)*(1-sy.sqrt(2*ro/(rf+ro)))
+    dv1 = sy.sqrt(mu/r0)*(sy.sqrt(2*rf/(rf+r0))-1)
+    dv2 = sy.sqrt(mu/rf)*(1-sy.sqrt(2*r0/(rf+r0)))
 
 alpha = sy.Symbol(r'\alpha', real=True, positive=True) 
-alphaEq = sy.Eq(alpha, rf/ro)
+alphaEq = sy.Eq(alpha, rf/r0)
 rfITOalpha = sy.solve(alphaEq, rf)[0]
 spp.showEquation(rf, rfITOalpha)
 
     # note that I am calling this expression beta in code, but notice how it is a Dummy.  This is a trick to help keep various terms together when solving equations
 beta = sy.Dummy(r'\frac{\Delta{V_{tol}}}{\sqrt{(\frac{\mu}{r_o}})}', real=True, positive=True)
-betaEq = sy.Eq(beta, dvTol/(sy.sqrt(mu/ro)))
-roITObeta = sy.solve(betaEq, ro)[0].subs(rf, rfITOalpha) # standard substitution and printing the output as we go...
-spp.showEquation(ro, roITObeta)
-rfFull = rfITOalpha.subs(ro, roITObeta) 
+betaEq = sy.Eq(beta, dvTol/(sy.sqrt(mu/r0)))
+roITObeta = sy.solve(betaEq, r0)[0].subs(rf, rfITOalpha) # standard substitution and printing the output as we go...
+spp.showEquation(r0, roITObeta)
+rfFull = rfITOalpha.subs(r0, roITObeta) 
 spp.showEquation(rf, rfFull)
 dvTolEq = sy.Eq(dvTol, dv1+dv2)
 spp.showEquation(dvTol, dvTolEq)
-dvTotEqSubs = dvTolEq.subs(rf, rfFull).subs(ro, roITObeta).simplify()
+dvTotEqSubs = dvTolEq.subs(rf, rfFull).subs(r0, roITObeta).simplify()
 spp.showEquation(dvTotEqSubs)
 dvTotSimplified = sy.solve(dvTotEqSubs, beta)[0]
 
@@ -55,9 +63,9 @@ spp.printMarkdown(r'The problem explicitly states that we should simplify this i
 spp.printMarkdown(r'### 5-b {-}')
 spp.printMarkdown(r'We do the same thing, but this time we sum the circular speed with the parabolic speeds.')
 with evaluate(False) :
-    vTotParaEq = sy.Eq(dvTol, sy.sqrt(2*mu/rf) - sy.sqrt(mu/rf) +  sy.sqrt(2*mu/ro) - sy.sqrt(mu/ro))
+    vTotParaEq = sy.Eq(dvTol, sy.sqrt(2*mu/rf) - sy.sqrt(mu/rf) +  sy.sqrt(2*mu/r0) - sy.sqrt(mu/r0))
 spp.showEquation(vTotParaEq, cleanEqu=False)
-dvTotParaSubbed = vTotParaEq.subs(rf, rfFull).subs(ro, roITObeta)
+dvTotParaSubbed = vTotParaEq.subs(rf, rfFull).subs(r0, roITObeta)
 dvParSubs = sy.solve(dvTotParaSubbed, beta)[0]
 spp.showEquation(dvTol, dvParSubs)
 

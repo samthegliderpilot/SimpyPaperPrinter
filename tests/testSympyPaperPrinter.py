@@ -54,6 +54,19 @@ class testSympyPaperPrinterClass(unittest.TestCase) :
         assert str(cleanedExpression) == "g(y)*cos(x)*Derivative(z(t), t)"
         assert cleanedExpression == expectedExpression
 
+    def testFilteringOfSympyDefaultFunctionArguments(self) :
+        t =sy.Symbol('t')
+        dv1 = sy.Symbol(r'\Delta{V_{1}}')
+        ro = sy.Symbol(r'r_o')        
+        vf = sy.Function(r'v_f')(t, ro)
+        
+        cleanedExpression = spp.cleanOutUnwantedArguments(dv1*ro*vf*sy.cos(vf))
+        
+        expectedExpression = dv1*ro*sy.Symbol(r'v_f')*sy.cos(sy.Symbol(r'v_f'))
+        
+        assert str(cleanedExpression) == "\Delta{V_{1}}*r_o*v_f*cos(v_f)"
+        assert cleanedExpression == expectedExpression
+
     def testConvertingTimeDerivativesToDots(self):
         t = sy.Symbol('t')
         x = sy.Symbol('x')
@@ -66,5 +79,7 @@ class testSympyPaperPrinterClass(unittest.TestCase) :
         zS = sy.Symbol('z')
         expectedSymbol = zS*sy.Symbol(r'\dot{z}')*sy.Symbol(r'\ddot{z}')*y
         assert expectedSymbol == cleanedExpression
-      
+    
+
+        
 
